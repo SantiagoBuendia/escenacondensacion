@@ -1,55 +1,61 @@
 using UnityEngine;
 
+/// <summary>
+/// Inventario simple para el jugador: controla si tiene un cubo de hielo en mano.
+/// - Instancia el prefab del hielo en un punto "hieloEnMano" (si está asignado).
+/// - Permite colocar el hielo en la olla llamando a ControlEvaporizacion.ResetProceso().
+/// </summary>
 public class InventarioJugador : MonoBehaviour
 {
-    public bool tengoHielo = false;
-    public GameObject hieloEnMano;
+    [Header("Estado")]
+    public bool tieneHielo = false;
 
-    public bool hieloEnOlla = false;
+    [Header("Visual (opcional)")]
+    public Transform hieloEnMano; // empty transform donde aparece el hielo en la mano (opcional)
+    GameObject hieloInstanciado;
 
-    public void TomarHielo(GameObject prefab)
+    /// <summary>
+    /// Tomar un cubo de hielo (instancia prefab y marca que el jugador tiene hielo).
+    /// </summary>
+    public void TomarHielo(GameObject prefabHielo)
     {
-        if (tengoHielo)
+        if (tieneHielo) return;
+
+        tieneHielo = true;
+
+        if (prefabHielo != null && hieloEnMano != null)
         {
-            Debug.Log("Ya tienes un hielo en la mano.");
-            return;
+            hieloInstanciado = Instantiate(prefabHielo, hieloEnMano.position, Quaternion.identity);
+            hieloInstanciado.transform.SetParent(hieloEnMano, true);
         }
 
-        hieloEnMano = Instantiate(prefab);
-        hieloEnMano.transform.SetParent(transform);
-        hieloEnMano.transform.localPosition = new Vector3(0.2f, -0.1f, 0.4f);
-
-        tengoHielo = true;
-        hieloEnOlla = false;
-
-        Debug.Log("[InventarioJugador] Tomaste un cubo de hielo.");
+        Debug.Log("[InventarioJugador] Tomó un cubo de hielo.");
     }
 
-    public void ColocarHieloEnOlla(ControlEvaporizacion olla)
+    /// <summary>
+    /// Colocar el hielo en la olla: destruye el objeto visual en la mano y activa el hielo en la olla.
+    /// Llama a ResetProceso() del ControlEvaporizacion para inicializar el ciclo.
+    /// </summary>
+    public void ColocarHieloEnOlla(ControlEvaporizacion controlEvaporizacion)
     {
-        if (!tengoHielo)
+        if (!tieneHielo || controlEvaporizacion == null) return;
+
+        tieneHielo = false;
+
+        // Destruir el hielo visual en mano si existe
+        if (hieloInstanciado != null)
         {
-            Debug.Log("No tienes hielo.");
-            return;
+            Destroy(hieloInstanciado);
+            hieloInstanciado = null;
         }
 
-        if (olla == null)
+        // Activar el hielo en la olla y reiniciar proceso
+        if (controlEvaporizacion.hielo != null)
         {
-            Debug.LogError("No hay ControlEvaporizacion.");
-            return;
+            controlEvaporizacion.hielo.SetActive(true);
+            controlEvaporizacion.ResetProceso();
         }
 
-        // ACTIVAR HIELO AL SER COLOCADO
-        olla.hielo.SetActive(true);
-        olla.hielo.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
-
-        Destroy(hieloEnMano);
-        tengoHielo = false;
-        hieloEnOlla = true;
-
-        // INICIA UN NUEVO CICLO EN LA OLLA
-        olla.ReiniciarCiclo();
-
-        Debug.Log("[InventarioJugador] Hielo colocado en la olla.");
+        Debug.Log("[InventarioJugador] Colocó el hielo en la olla.");
     }
 }

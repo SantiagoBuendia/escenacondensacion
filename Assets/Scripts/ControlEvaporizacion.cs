@@ -25,14 +25,10 @@ public class ControlEvaporizacion : MonoBehaviour
     Vector3 posicionInicialAgua;
 
     ParticleSystem vaporPS;
-
     MensajeVRPro mensajeVR;
-    InventarioJugador jugador;
 
     void Start()
     {
-        jugador = FindObjectOfType<InventarioJugador>();
-
         if (agua != null)
         {
             escalaInicialAgua = agua.transform.localScale;
@@ -42,12 +38,12 @@ public class ControlEvaporizacion : MonoBehaviour
 
         if (hielo != null)
         {
-            hielo.SetActive(false);
+            hielo.SetActive(true);
             hielo.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
         }
 
         if (luzEstufa != null)
-            luzEstufa.enabled = false;
+            luzEstufa.enabled = estufaEncendida;
 
         CrearVapor();
         mensajeVR = FindObjectOfType<MensajeVRPro>();
@@ -55,13 +51,9 @@ public class ControlEvaporizacion : MonoBehaviour
 
     void Update()
     {
-        if (!jugador.hieloEnOlla) return;
         if (!estufaEncendida) return;
 
         temperatura += Time.deltaTime * velocidadAumentoTemp;
-
-        ActualizarColorTemperatura();
-
         if (textoUI != null)
             textoUI.text = "Temperatura: " + (int)temperatura + " °C";
 
@@ -107,60 +99,23 @@ public class ControlEvaporizacion : MonoBehaviour
             if (agua.transform.localScale.y <= 0.01f)
             {
                 agua.SetActive(false);
-
                 if (!vaporMostrado)
                     MostrarVapor();
-
-                // PROCESO LISTO PARA NUEVO HIELO
-                jugador.hieloEnOlla = false;
-                estufaEncendida = false;
             }
         }
-    }
-
-    public void ReiniciarCiclo()
-    {
-        temperatura = 0f;
-        transicionHieloAguaCompleta = false;
-        aguaEvaporandose = false;
-        vaporMostrado = false;
-
-        if (agua != null)
-            agua.SetActive(false);
-
-        if (hielo != null)
-        {
-            hielo.SetActive(true);
-            hielo.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
-        }
-
-        if (luzEstufa != null)
-            luzEstufa.enabled = estufaEncendida;
-    }
-
-    void ActualizarColorTemperatura()
-    {
-        if (textoUI == null) return;
-
-        if (temperatura <= 5f)
-            textoUI.color = new Color(0.4f, 0.7f, 1f);
-        else if (temperatura <= 60f)
-            textoUI.color = new Color(1f, 0.85f, 0.2f);
-        else if (temperatura <= 100f)
-            textoUI.color = new Color(1f, 0.35f, 0.2f);
-        else
-            textoUI.color = new Color(1f, 0.1f, 0.1f);
     }
 
     public void ToggleEstufa()
     {
         estufaEncendida = !estufaEncendida;
-
         if (luzEstufa != null)
             luzEstufa.enabled = estufaEncendida;
     }
 
     public bool EstufaEncendida => estufaEncendida;
+
+    // 🔹 EXPOSICIÓN SOLO LECTURA PARA EL CONDENSADOR
+    public bool VaporActivo => vaporMostrado;
 
     void CrearVapor()
     {
@@ -176,6 +131,14 @@ public class ControlEvaporizacion : MonoBehaviour
         main.startSize = 0.3f;
         main.startColor = new Color(1f, 1f, 1f, 0.6f);
 
+        var emission = vaporPS.emission;
+        emission.rateOverTime = 30f;
+
+        var shape = vaporPS.shape;
+        shape.shapeType = ParticleSystemShapeType.Cone;
+        shape.angle = 25f;
+        shape.radius = 0.2f;
+
         vaporPS.Stop();
     }
 
@@ -189,5 +152,39 @@ public class ControlEvaporizacion : MonoBehaviour
     void OcultarVapor()
     {
         vaporPS.Stop();
+    }
+
+    public void ResetProceso()
+    {
+        temperatura = 0f;
+        transicionHieloAguaCompleta = false;
+        aguaEvaporandose = false;
+        vaporMostrado = false;
+
+        if (textoUI != null)
+            textoUI.text = "Temperatura: 0 °C";
+
+        if (agua != null)
+        {
+            agua.SetActive(false);
+            agua.transform.localScale = escalaInicialAgua;
+            agua.transform.position = posicionInicialAgua;
+        }
+
+        if (hielo != null)
+        {
+            hielo.SetActive(true);
+            hielo.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
+        }
+
+        vaporPS.Stop();
+
+        if (mensajeVR != null)
+            mensajeVR.ResetMensajes();
+    }
+
+    public void ReiniciarCiclo()
+    {
+        ResetProceso();
     }
 }
