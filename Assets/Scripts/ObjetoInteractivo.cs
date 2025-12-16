@@ -23,8 +23,8 @@ public class ObjetoInteractivo : MonoBehaviour
     [TextArea] public string mensajeSinAccion = "No hay acción para este objeto.";
 
     [Header("Referencias")]
-    public GameObject prefabHielo;           // Prefab del cubo de hielo (para la nevera)
-    public ControlEvaporizacion olla;        // Referencia a la olla (ControlEvaporizacion) si se necesita
+    public GameObject prefabHielo;            // Prefab del cubo de hielo (nevera)
+    public ControlEvaporizacion olla;         // REFERENCIA DIRECTA A LA OLLA
 
     // caches
     MensajeVRPro mensajeVR;
@@ -43,10 +43,8 @@ public class ObjetoInteractivo : MonoBehaviour
     {
         if (!string.IsNullOrEmpty(mensajeExplicacion))
         {
-            // Mostrar en HUD VR con duración muy larga (hasta OnHoverExit)
             mensajeVR?.MostrarMensaje(mensajeExplicacion, 999f);
 
-            // También actualizar panel de UI si existe
             if (uiExplicacion != null)
                 uiExplicacion.MostrarExplicacion(mensajeExplicacion);
         }
@@ -65,7 +63,9 @@ public class ObjetoInteractivo : MonoBehaviour
         if (mensajeVR == null) mensajeVR = FindObjectOfType<MensajeVRPro>();
         if (jugador == null) jugador = FindObjectOfType<InventarioJugador>();
 
-        // Nevera: tomar hielo
+        // ================================
+        // NEVERA
+        // ================================
         if (esNevera && prefabHielo != null && jugador != null)
         {
             jugador.TomarHielo(prefabHielo);
@@ -73,7 +73,9 @@ public class ObjetoInteractivo : MonoBehaviour
             return;
         }
 
-        // Olla: colocar hielo
+        // ================================
+        // OLLA
+        // ================================
         if (esOlla && olla != null && jugador != null)
         {
             jugador.ColocarHieloEnOlla(olla);
@@ -81,22 +83,24 @@ public class ObjetoInteractivo : MonoBehaviour
             return;
         }
 
-        // Botón estufa: toggle
-        if (esBotonEstufa)
+        // ================================
+        // BOTÓN ESTUFA (FIX DEFINITIVO)
+        // ================================
+        if (esBotonEstufa && olla != null)
         {
-            var control = FindObjectOfType<ControlEvaporizacion>();
-            if (control != null)
-            {
-                control.ToggleEstufa();
-                if (control.EstufaEncendida)
-                    mensajeVR?.MostrarMensaje(mensajeAccionEstufaEncendida);
-                else
-                    mensajeVR?.MostrarMensaje(mensajeAccionEstufaApagada);
-            }
+            olla.ToggleEstufa();
+
+            if (olla.EstufaEncendida)
+                mensajeVR?.MostrarMensaje(mensajeAccionEstufaEncendida);
+            else
+                mensajeVR?.MostrarMensaje(mensajeAccionEstufaApagada);
+
             return;
         }
 
-        // Default
+        // ================================
+        // DEFAULT
+        // ================================
         mensajeVR?.MostrarMensaje(mensajeSinAccion);
     }
 }

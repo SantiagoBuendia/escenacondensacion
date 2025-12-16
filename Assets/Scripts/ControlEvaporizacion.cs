@@ -6,6 +6,7 @@ public class ControlEvaporizacion : MonoBehaviour
     [Header("Referencias de escena")]
     public GameObject hielo;
     public GameObject agua;
+    public GameObject aguaCondensada;
     public Light luzEstufa;
     public TextMeshProUGUI textoUI;
 
@@ -15,17 +16,37 @@ public class ControlEvaporizacion : MonoBehaviour
     public float velocidadEvaporar = 0.05f;
     public float tiempoVaporVisible = 3f;
 
+    [Header("Condensación")]
+    public float tiempoEsperaCondensacion = 7f;
+    public float velocidadSubidaCondensada = 0.02f;
+
+    // ===============================
+    // ESTADOS ORIGINALES (NO TOCADOS)
+    // ===============================
     bool estufaEncendida = false;
     float temperatura = 0f;
     bool transicionHieloAguaCompleta = false;
     bool aguaEvaporandose = false;
     bool vaporMostrado = false;
 
+    // ===============================
+    // ESTADOS NUEVOS
+    // ===============================
+    bool esperandoCondensacion = false;
+    bool llenandoCondensada = false;
+    float temporizadorCondensacion = 0f;
+
     Vector3 escalaInicialAgua;
     Vector3 posicionInicialAgua;
+    Vector3 escalaInicialCondensada;
 
     ParticleSystem vaporPS;
-    MensajeVRPro mensajeVR;
+
+    // ===============================
+    // PROPIEDADES USADAS POR OTROS
+    // ===============================
+    public bool EstufaEncendida => estufaEncendida;
+    public bool VaporActivo => vaporMostrado;
 
     void Start()
     {
@@ -34,6 +55,12 @@ public class ControlEvaporizacion : MonoBehaviour
             escalaInicialAgua = agua.transform.localScale;
             posicionInicialAgua = agua.transform.position;
             agua.SetActive(false);
+        }
+
+        if (aguaCondensada != null)
+        {
+            escalaInicialCondensada = aguaCondensada.transform.localScale;
+            aguaCondensada.SetActive(false);
         }
 
         if (hielo != null)
@@ -46,7 +73,7 @@ public class ControlEvaporizacion : MonoBehaviour
             luzEstufa.enabled = estufaEncendida;
 
         CrearVapor();
-        mensajeVR = FindObjectOfType<MensajeVRPro>();
+        ActualizarUI();
     }
 
     void Update()
@@ -54,91 +81,99 @@ public class ControlEvaporizacion : MonoBehaviour
         if (!estufaEncendida) return;
 
         temperatura += Time.deltaTime * velocidadAumentoTemp;
-        if (textoUI != null)
-            textoUI.text = "Temperatura: " + (int)temperatura + " °C";
+        ActualizarUI();
 
-        if (!transicionHieloAguaCompleta && hielo != null && hielo.activeSelf)
+        // 🔹 HIELO → AGUA
+        if (!transicionHieloAguaCompleta && hielo.activeSelf)
         {
-            hielo.transform.localScale -= Vector3.one * (velocidadDerretir * Time.deltaTime);
+            hielo.transform.localScale -= Vector3.one * velocidadDerretir * Time.deltaTime;
 
             if (hielo.transform.localScale.x <= 0.05f)
             {
                 hielo.SetActive(false);
-
-                if (agua != null)
-                {
-                    agua.SetActive(true);
-                    agua.transform.localScale = new Vector3(escalaInicialAgua.x, 0.01f, escalaInicialAgua.z);
-                    agua.transform.position = posicionInicialAgua;
-                }
-
+                agua.SetActive(true);
+                agua.transform.localScale =
+                    new Vector3(escalaInicialAgua.x, 0.01f, escalaInicialAgua.z);
+                agua.transform.position = posicionInicialAgua;
                 transicionHieloAguaCompleta = true;
             }
         }
-        else if (transicionHieloAguaCompleta && !aguaEvaporandose && agua != null && agua.activeSelf)
+        // 🔹 AGUA SUBE
+        else if (transicionHieloAguaCompleta && !aguaEvaporandose)
         {
             Vector3 esc = agua.transform.localScale;
+
             if (esc.y < escalaInicialAgua.y)
             {
                 esc.y += Time.deltaTime * 0.05f;
                 agua.transform.localScale = esc;
-
-                Vector3 pos = agua.transform.position;
-                pos.y += Time.deltaTime * 0.025f;
-                agua.transform.position = pos;
             }
             else
             {
                 aguaEvaporandose = true;
             }
         }
-        else if (aguaEvaporandose && agua != null && agua.activeSelf)
+        // 🔹 EVAPORACIÓN
+        else if (aguaEvaporandose)
         {
-            agua.transform.localScale -= new Vector3(0f, velocidadEvaporar * Time.deltaTime, 0f);
+            agua.transform.localScale -=
+                new Vector3(0f, velocidadEvaporar * Time.deltaTime, 0f);
 
             if (agua.transform.localScale.y <= 0.01f)
             {
                 agua.SetActive(false);
+
                 if (!vaporMostrado)
+                {
                     MostrarVapor();
+                    IniciarEsperaCondensacion();
+                }
             }
+        }
+
+        // 🔹 ESPERA DE 5s (GOTAS VISIBLES)
+        if (esperandoCondensacion)
+        {
+            temporizadorCondensacion += Time.deltaTime;
+
+            if (temporizadorCondensacion >= tiempoEsperaCondensacion)
+            {
+                esperandoCondensacion = false;
+                ActivarAguaCondensada();
+            }
+        }
+
+        // 🔹 SUBIDA DEL AGUA CONDENSADA
+        if (llenandoCondensada && aguaCondensada.activeSelf)
+        {
+            Vector3 esc = aguaCondensada.transform.localScale;
+            esc.y += Time.deltaTime * velocidadSubidaCondensada;
+            esc.y = Mathf.Clamp(esc.y, 0.01f, escalaInicialCondensada.y);
+            aguaCondensada.transform.localScale = esc;
         }
     }
 
+    // ===============================
+    // ESTUFA
+    // ===============================
     public void ToggleEstufa()
     {
         estufaEncendida = !estufaEncendida;
+
         if (luzEstufa != null)
             luzEstufa.enabled = estufaEncendida;
     }
 
-    public bool EstufaEncendida => estufaEncendida;
-
-    // 🔹 EXPOSICIÓN SOLO LECTURA PARA EL CONDENSADOR
-    public bool VaporActivo => vaporMostrado;
-
+    // ===============================
+    // VAPOR
+    // ===============================
     void CrearVapor()
     {
         GameObject vaporGO = new GameObject("Vapor");
-        vaporGO.transform.SetParent(this.transform);
+        vaporGO.transform.SetParent(transform);
         vaporGO.transform.localPosition = Vector3.zero;
 
         vaporPS = vaporGO.AddComponent<ParticleSystem>();
-        var main = vaporPS.main;
-        main.loop = false;
-        main.startLifetime = 1.5f;
-        main.startSpeed = 0.5f;
-        main.startSize = 0.3f;
-        main.startColor = new Color(1f, 1f, 1f, 0.6f);
-
-        var emission = vaporPS.emission;
-        emission.rateOverTime = 30f;
-
-        var shape = vaporPS.shape;
-        shape.shapeType = ParticleSystemShapeType.Cone;
-        shape.angle = 25f;
-        shape.radius = 0.2f;
-
         vaporPS.Stop();
     }
 
@@ -146,12 +181,31 @@ public class ControlEvaporizacion : MonoBehaviour
     {
         vaporMostrado = true;
         vaporPS.Play();
-        Invoke(nameof(OcultarVapor), tiempoVaporVisible);
     }
 
-    void OcultarVapor()
+    // ===============================
+    // CONDENSACIÓN
+    // ===============================
+    void IniciarEsperaCondensacion()
     {
-        vaporPS.Stop();
+        esperandoCondensacion = true;
+        temporizadorCondensacion = 0f;
+    }
+
+    void ActivarAguaCondensada()
+    {
+        aguaCondensada.SetActive(true);
+        aguaCondensada.transform.localScale =
+            new Vector3(escalaInicialCondensada.x, 0.01f, escalaInicialCondensada.z);
+        llenandoCondensada = true;
+    }
+
+    // ===============================
+    // MÉTODOS COMPATIBILIDAD
+    // ===============================
+    public void AgregarAguaPorCondensacion(float cantidad)
+    {
+        // Se mantiene SOLO para no romper GotaAgua
     }
 
     public void ResetProceso()
@@ -160,31 +214,22 @@ public class ControlEvaporizacion : MonoBehaviour
         transicionHieloAguaCompleta = false;
         aguaEvaporandose = false;
         vaporMostrado = false;
+        esperandoCondensacion = false;
+        llenandoCondensada = false;
 
-        if (textoUI != null)
-            textoUI.text = "Temperatura: 0 °C";
+        agua.SetActive(false);
+        aguaCondensada.SetActive(false);
 
-        if (agua != null)
-        {
-            agua.SetActive(false);
-            agua.transform.localScale = escalaInicialAgua;
-            agua.transform.position = posicionInicialAgua;
-        }
-
-        if (hielo != null)
-        {
-            hielo.SetActive(true);
-            hielo.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
-        }
+        hielo.SetActive(true);
+        hielo.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
 
         vaporPS.Stop();
-
-        if (mensajeVR != null)
-            mensajeVR.ResetMensajes();
+        ActualizarUI();
     }
 
-    public void ReiniciarCiclo()
+    void ActualizarUI()
     {
-        ResetProceso();
+        if (textoUI != null)
+            textoUI.text = "Temperatura: " + (int)temperatura + " °C";
     }
 }

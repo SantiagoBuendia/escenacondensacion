@@ -2,32 +2,27 @@ using UnityEngine;
 
 public class Condensador : MonoBehaviour
 {
-    public ControlEvaporizacion control;
-    public GameObject gotaPrefab;
-    public Transform puntoCaida;
-    public float tiempoEntreGotas = 0.4f;
+    public ControlEvaporizacion olla;
+    public GameObject prefabGota;
+    public Transform puntoSalida;
 
-    bool condensando = false;
+    public float intervaloGoteo = 0.4f;
+    float tiempo;
 
     void Update()
     {
-        if (control == null || gotaPrefab == null || puntoCaida == null)
+        if (olla == null || prefabGota == null || puntoSalida == null)
             return;
 
-        if (control.VaporActivo && !condensando)
-        {
-            condensando = true;
-            InvokeRepeating(nameof(CrearGota), 0f, tiempoEntreGotas);
-        }
-        else if (!control.VaporActivo && condensando)
-        {
-            condensando = false;
-            CancelInvoke(nameof(CrearGota));
-        }
-    }
+        if (!olla.VaporActivo)
+            return;
 
-    void CrearGota()
-    {
-        Instantiate(gotaPrefab, puntoCaida.position, Quaternion.identity);
+        tiempo += Time.deltaTime;
+
+        if (tiempo >= intervaloGoteo)
+        {
+            Instantiate(prefabGota, puntoSalida.position, Quaternion.identity);
+            tiempo = 0f;
+        }
     }
 }

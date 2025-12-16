@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 8491588998508686220}
   - component: {fileID: 5259585520575276634}
   - component: {fileID: 3402552620864921652}
+  - component: {fileID: 7067602298833550017}
   m_Layer: 0
   m_Name: Gota de agua
   m_TagString: Untagged
@@ -106,7 +107,7 @@ SphereCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
@@ -139,3 +140,16 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &7067602298833550017
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3760870638301857262}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea48bdb169e2bf643b153474dc492385, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GotaAgua
+  cantidadAgua: 0.1

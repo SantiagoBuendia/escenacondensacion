@@ -166,7 +166,7 @@ PlayerSettings:
   androidMaxAspectRatio: 2.4
   androidMinAspectRatio: 1
   applicationIdentifier:
-    Android: com.kevinbaustudios.evaporizacionlab
+    Android: com.kevinbaustudios.condensacionlab
     Standalone: com.unity.template.get-started
     iPhone: com.unity.template.get-started
   buildNumber:
