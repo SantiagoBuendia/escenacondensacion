@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1045 &1
+EditorBuildSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Scenes:
+  - enabled: 0
+    path: Assets/Scenes/GetStarted_Scene.unity
+    guid: 6888813f2bd9e4521b9b1343abf0c60f
+  - enabled: 0
+    path: Assets/Scenes/EscenaFusion.unity
+    guid: c88a6ae8eb1ecf6408d440f3b19372d5
+  m_configObjects:
+    Unity.XR.Oculus.Settings: {fileID: 11400000, guid: 7c4306429c02ced44b0b1fa6c4d859a7, type: 2}
+    com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+    com.unity.polyspatial.xr.xr_settings: {fileID: 11400000, guid: 89f21907ab297b743b6e8c80853d6e7d, type: 2}
+    com.unity.xr.arfoundation.simulation_settings: {fileID: 11400000, guid: 6110e3814f53dc040ba4d70c87235efe, type: 2}
+    com.unity.xr.management.loader_settings: {fileID: 11400000, guid: 845b232812aeec949b38956ba82bfc6c, type: 2}
+    com.unity.xr.openxr.settings4: {fileID: 11400000, guid: 5a6884677f0a03d4699334cdea5d37d4, type: 2}
+  m_UseUCBPForAssetBundles: 0
