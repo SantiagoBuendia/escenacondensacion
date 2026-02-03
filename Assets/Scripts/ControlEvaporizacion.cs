@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using TMPro;
+using System.Collections;
 
 public class ControlEvaporizacion : MonoBehaviour
 {
@@ -19,6 +20,13 @@ public class ControlEvaporizacion : MonoBehaviour
     [Header("Condensación")]
     public float tiempoEsperaCondensacion = 7f;
     public float velocidadSubidaCondensada = 0.02f;
+
+    // ===============================
+    // VARIABLES PARA BASE DE DATOS
+    // ===============================
+    private float tiempoInicioSimulacion;
+    private bool simulacionIniciadaBD = false;
+    private bool simulacionFinalizadaBD = false;
 
     // ===============================
     // ESTADOS ORIGINALES (NO TOCADOS)
@@ -81,6 +89,13 @@ public class ControlEvaporizacion : MonoBehaviour
 
     void Update()
     {
+
+        // --- INICIO DE SIMULACIÓN EN BD ---
+        if (hielo.activeSelf && !simulacionIniciadaBD)
+        {
+            IniciarSimulacionEnBD();
+        }
+
         if (!estufaEncendida) return;
 
         temperatura += Time.deltaTime * velocidadAumentoTemp;
@@ -152,7 +167,12 @@ public class ControlEvaporizacion : MonoBehaviour
         {
             Vector3 esc = aguaCondensada.transform.localScale;
             esc.y += Time.deltaTime * velocidadSubidaCondensada;
-            esc.y = Mathf.Clamp(esc.y, 0.01f, escalaInicialCondensada.y);
+            if (esc.y >= escalaInicialCondensada.y)
+            {
+                esc.y = escalaInicialCondensada.y;
+                llenandoCondensada = false;
+                FinalizarSimulacionBD(); // <--- GUARDAR EN BD AL LLENARSE
+            }
             aguaCondensada.transform.localScale = esc;
         }
     }
@@ -166,6 +186,16 @@ public class ControlEvaporizacion : MonoBehaviour
 
         if (luzEstufa != null)
             luzEstufa.enabled = estufaEncendida;
+
+        if (simulacionIniciadaBD && !simulacionFinalizadaBD && GestorSimulacion.idSimulacionActual > 0)
+        {
+            GestorSimulacionEvento.RegistrarEvento(
+                GestorSimulacion.idSimulacionActual,
+                estufaEncendida ? "Estufa encendida" : "Estufa apagada",
+                "Usuario cambio el estado del calor",
+                (int)Time.time
+            );
+        }
     }
 
     // ===============================
@@ -236,4 +266,57 @@ public class ControlEvaporizacion : MonoBehaviour
         if (textoUI != null)
             textoUI.text = "Temperatura: " + (int)temperatura + " °C";
     }
+    // ===============================
+    // LÓGICA DE BASE DE DATOS
+    // ===============================
+    void IniciarSimulacionEnBD()
+    {
+        simulacionIniciadaBD = true;
+        tiempoInicioSimulacion = Time.time;
+
+        GestorSimulacion.IniciarSimulacion(
+            SesionUsuario.IdUsuario,
+            "Condensacion de la materia",
+            "Cambio de estado gaseoso a liquido",
+            "VR"
+        );
+        StartCoroutine(RegistrarEventoInicial());
+    }
+
+    IEnumerator RegistrarEventoInicial()
+    {
+        yield return new WaitUntil(() => GestorSimulacion.idSimulacionActual > 0);
+        GestorSimulacionEvento.RegistrarEvento(
+            GestorSimulacion.idSimulacionActual,
+            "Inicio Proceso",
+            "El hielo esta en posicion y listo para el calor",
+            (int)Time.time
+        );
+    }
+
+    void FinalizarSimulacionBD()
+    {
+        if (simulacionFinalizadaBD) return;
+        simulacionFinalizadaBD = true;
+
+        GestorSimulacionResultado.RegistrarResultado(
+            GestorSimulacion.idSimulacionActual,
+            "Temperatura final condensacion",
+            temperatura.ToString("F1"),
+            "°C"
+        );
+
+        int duracion = (int)(Time.time - tiempoInicioSimulacion);
+        GestorSimulacionFinalizar.FinalizarSimulacion(GestorSimulacion.idSimulacionActual, duracion);
+
+        if (textoUI != null)
+        {
+            textoUI.text = "¡CONDENSACIÓN COMPLETADA!";
+            textoUI.color = Color.green;
+        }
+
+        Invoke("CerrarAplicacion", 5f);
+    }
+
+    void CerrarAplicacion() { Application.Quit(); }
 }
