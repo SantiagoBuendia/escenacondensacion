@@ -12,7 +12,7 @@ public class MonoBehaviourHelper : MonoBehaviour
             {
                 GameObject go = new GameObject("MonoBehaviourHelper");
                 _instance = go.AddComponent<MonoBehaviourHelper>();
-                DontDestroyOnLoad(go);
+                Object.DontDestroyOnLoad(go);
             }
             return _instance;
         }

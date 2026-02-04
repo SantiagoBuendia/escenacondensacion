@@ -28,7 +28,7 @@ public static class GestorSimulacionFinalizar
         form.AddField("duracion", duracion);
 
         UnityWebRequest www =
-            UnityWebRequest.Post("http://localhost/cgi-bin/PaginaWebLaboratorio.exe", form);
+            UnityWebRequest.Post(ApiConfig.BASE_URL, form);
 
         yield return www.SendWebRequest();
 

@@ -1,12 +1,12 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 /// <summary>
-/// Objeto interactivo: hover muestra explicación larga, interact ejecuta acción.
+/// Objeto interactivo: hover muestra explicaciÃ³n larga, interact ejecuta acciÃ³n.
 /// Adaptado para trabajar con ControlEvaporizacion.
 /// </summary>
 public class ObjetoInteractivo : MonoBehaviour
 {
-    [Header("Explicación educativa (hover)")]
+    [Header("ExplicaciÃ³n educativa (hover)")]
     [TextArea]
     public string mensajeExplicacion;
 
@@ -18,9 +18,9 @@ public class ObjetoInteractivo : MonoBehaviour
     [Header("Mensajes cortos (al interactuar)")]
     [TextArea] public string mensajeAccionNevera = "Has tomado un cubo de hielo.";
     [TextArea] public string mensajeAccionOlla = "Has colocado el hielo en la olla.";
-    [TextArea] public string mensajeAccionEstufaEncendida = "La estufa está encendida.";
+    [TextArea] public string mensajeAccionEstufaEncendida = "La estufa estÃ¡ encendida.";
     [TextArea] public string mensajeAccionEstufaApagada = "La estufa se ha apagado.";
-    [TextArea] public string mensajeSinAccion = "No hay acción para este objeto.";
+    [TextArea] public string mensajeSinAccion = "No hay acciÃ³n para este objeto.";
 
     [Header("Referencias")]
     public GameObject prefabHielo;            // Prefab del cubo de hielo (nevera)
@@ -38,7 +38,7 @@ public class ObjetoInteractivo : MonoBehaviour
         uiExplicacion = FindObjectOfType<UIExplicacionLaboratorio>();
     }
 
-    // Hover enter: mostrar explicación larga
+    // Hover enter: mostrar explicaciÃ³n larga
     public void OnHoverEnter()
     {
         if (!string.IsNullOrEmpty(mensajeExplicacion))
@@ -70,6 +70,14 @@ public class ObjetoInteractivo : MonoBehaviour
         {
             jugador.TomarHielo(prefabHielo);
             mensajeVR?.MostrarMensaje(mensajeAccionNevera);
+
+            GestorSimulacionEvento.RegistrarEvento(
+                GestorSimulacion.idSimulacionActual,
+                "Hielo en olla",
+                "El usuario coloco el hielo sobre la estufa/olla",
+                (int)Time.time
+            );
+
             return;
         }
 
@@ -80,20 +88,37 @@ public class ObjetoInteractivo : MonoBehaviour
         {
             jugador.ColocarHieloEnOlla(olla);
             mensajeVR?.MostrarMensaje(mensajeAccionOlla);
+
+            GestorSimulacionEvento.RegistrarEvento(
+                GestorSimulacion.idSimulacionActual,
+                "Hielo en olla",
+                "El usuario coloco el hielo sobre la estufa/olla",
+                (int)Time.time
+            );
+
             return;
         }
 
         // ================================
-        // BOTÓN ESTUFA (FIX DEFINITIVO)
+        // BOTÃ“N ESTUFA (FIX DEFINITIVO)
         // ================================
         if (esBotonEstufa && olla != null)
         {
             olla.ToggleEstufa();
 
             if (olla.EstufaEncendida)
+            {
+                GestorSimulacionEvento.RegistrarEvento(GestorSimulacion.idSimulacionActual, "Encendido estufa", "El usuario pulso el boton de encendido", (int)Time.time);
+
                 mensajeVR?.MostrarMensaje(mensajeAccionEstufaEncendida);
+            }
             else
+            {
+                GestorSimulacionEvento.RegistrarEvento(GestorSimulacion.idSimulacionActual, "Apagado estufa", "El usuario apago la estufa", (int)Time.time);
+
                 mensajeVR?.MostrarMensaje(mensajeAccionEstufaApagada);
+            }
+
 
             return;
         }

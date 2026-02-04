@@ -38,7 +38,7 @@ public static class GestorSimulacionEvento
         form.AddField("tiempo", tiempo); // Coincide con el CGI (tiempo_segundos)
 
         UnityWebRequest www =
-            UnityWebRequest.Post("http://localhost/cgi-bin/PaginaWebLaboratorio.exe", form);
+            UnityWebRequest.Post(ApiConfig.BASE_URL, form);
 
         yield return www.SendWebRequest();
 

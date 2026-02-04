@@ -40,7 +40,7 @@ public static class GestorSimulacionResultado
         form.AddField("unidad", unidad);
 
         UnityWebRequest www =
-            UnityWebRequest.Post("http://localhost/cgi-bin/PaginaWebLaboratorio.exe", form);
+            UnityWebRequest.Post(ApiConfig.BASE_URL, form);
 
         yield return www.SendWebRequest();
 

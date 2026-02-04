@@ -27,6 +27,7 @@ public class ControlEvaporizacion : MonoBehaviour
     private float tiempoInicioSimulacion;
     private bool simulacionIniciadaBD = false;
     private bool simulacionFinalizadaBD = false;
+    private bool peticionInicioEnCurso = false;
 
     // ===============================
     // ESTADOS ORIGINALES (NO TOCADOS)
@@ -91,7 +92,7 @@ public class ControlEvaporizacion : MonoBehaviour
     {
 
         // --- INICIO DE SIMULACIÓN EN BD ---
-        if (hielo.activeSelf && !simulacionIniciadaBD)
+        if (hielo.activeSelf && !simulacionIniciadaBD && !peticionInicioEnCurso)
         {
             IniciarSimulacionEnBD();
         }
@@ -115,6 +116,8 @@ public class ControlEvaporizacion : MonoBehaviour
                     new Vector3(escalaInicialAgua.x, 0.01f, escalaInicialAgua.z);
                 agua.transform.position = posicionInicialAgua;
                 transicionHieloAguaCompleta = true;
+
+                StartCoroutine(RegistrarEventoSeguro("Hielo derretido", "El hielo se ha transformado en agua liquida"));
             }
         }
         // 🔹 AGUA SUBE
@@ -130,6 +133,8 @@ public class ControlEvaporizacion : MonoBehaviour
             else
             {
                 aguaEvaporandose = true;
+
+                StartCoroutine(RegistrarEventoSeguro("Inicio Evaporacion", "El agua ha alcanzado el punto de ebullicion"));
             }
         }
         // 🔹 EVAPORACIÓN
@@ -146,6 +151,8 @@ public class ControlEvaporizacion : MonoBehaviour
                 {
                     MostrarVapor();
                     IniciarEsperaCondensacion();
+
+                    StartCoroutine(RegistrarEventoSeguro("Agua evaporada", "Toda el agua se ha convertido en vapor"));
                 }
             }
         }
@@ -159,6 +166,8 @@ public class ControlEvaporizacion : MonoBehaviour
             {
                 esperandoCondensacion = false;
                 ActivarAguaCondensada();
+
+                StartCoroutine(RegistrarEventoSeguro("Inicio Condensacion", "El vapor comienza a enfriarse y condensarse"));
             }
         }
 
@@ -187,15 +196,6 @@ public class ControlEvaporizacion : MonoBehaviour
         if (luzEstufa != null)
             luzEstufa.enabled = estufaEncendida;
 
-        if (simulacionIniciadaBD && !simulacionFinalizadaBD && GestorSimulacion.idSimulacionActual > 0)
-        {
-            GestorSimulacionEvento.RegistrarEvento(
-                GestorSimulacion.idSimulacionActual,
-                estufaEncendida ? "Estufa encendida" : "Estufa apagada",
-                "Usuario cambio el estado del calor",
-                (int)Time.time
-            );
-        }
     }
 
     // ===============================
@@ -244,12 +244,15 @@ public class ControlEvaporizacion : MonoBehaviour
 
     public void ResetProceso()
     {
+        StartCoroutine(RegistrarEventoSeguro("Reinicio", "El usuario reinicio la practica"));
+
         temperatura = 0f;
         transicionHieloAguaCompleta = false;
         aguaEvaporandose = false;
         vaporMostrado = false;
         esperandoCondensacion = false;
         llenandoCondensada = false;
+        peticionInicioEnCurso = false;
 
         agua.SetActive(false);
         aguaCondensada.SetActive(false);
@@ -271,6 +274,7 @@ public class ControlEvaporizacion : MonoBehaviour
     // ===============================
     void IniciarSimulacionEnBD()
     {
+        peticionInicioEnCurso = true;
         simulacionIniciadaBD = true;
         tiempoInicioSimulacion = Time.time;
 
@@ -319,4 +323,18 @@ public class ControlEvaporizacion : MonoBehaviour
     }
 
     void CerrarAplicacion() { Application.Quit(); }
+
+    IEnumerator RegistrarEventoSeguro(string nombre, string desc)
+    {
+        // Esta línea hace que el código espere hasta que el servidor nos dé un ID
+        yield return new WaitUntil(() => GestorSimulacion.idSimulacionActual > 0);
+
+        GestorSimulacionEvento.RegistrarEvento(
+            GestorSimulacion.idSimulacionActual,
+            nombre,
+            desc,
+            (int)Time.time
+        );
+        Debug.Log("Evento registrado con éxito: " + nombre);
+    }
 }

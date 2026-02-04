@@ -38,7 +38,7 @@ public static class GestorSimulacion
         form.AddField("descripcion", descripcion);
         form.AddField("dispositivo", dispositivo);
 
-        UnityWebRequest www = UnityWebRequest.Post("http://localhost/cgi-bin/PaginaWebLaboratorio.exe", form);
+        UnityWebRequest www = UnityWebRequest.Post(ApiConfig.BASE_URL, form);
 
         yield return www.SendWebRequest();
 
